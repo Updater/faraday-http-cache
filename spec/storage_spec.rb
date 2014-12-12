@@ -14,7 +14,7 @@ describe Faraday::HttpCache::Storage do
 
   describe 'Cache configuration' do
     it 'uses a MemoryStore by default' do
-      expect(Faraday::HttpCache::MemoryStore).to receive(:new).and_call_original
+      expect(ActiveSupport::Cache::MemoryStore).to receive(:new).and_call_original
       Faraday::HttpCache::Storage.new
     end
 
@@ -39,17 +39,17 @@ describe Faraday::HttpCache::Storage do
   end
 
   describe 'storing responses' do
-
+    let(:expiration) { 3600 }
     shared_examples 'serialization' do
       it 'writes the response json to the underlying cache using a digest as the key' do
-        expect(cache).to receive(:write).with(cache_key, serialized)
+        expect(cache).to receive(:write).with(cache_key, serialized, {expires_in: expiration})
         subject.write(request, response)
       end
     end
 
     context 'with default serializer' do
       let(:serialized) { JSON.dump(response.serializable_hash) }
-      let(:cache_key)  { '084dd517af7651a9ca7823728544b9b55e0cc130' }
+      let(:cache_key)  { '8c715d092b88a89c737600fe42f2f093b9a18713' }
       it_behaves_like 'serialization'
 
       context 'with ASCII character in response that cannot be converted to UTF-8' do
@@ -73,7 +73,7 @@ describe Faraday::HttpCache::Storage do
     context 'with Marshal serializer' do
       let(:storage)    { Faraday::HttpCache::Storage.new store: cache, serializer: Marshal }
       let(:serialized) { Marshal.dump(response.serializable_hash) }
-      let(:cache_key) { '084dd517af7651a9ca7823728544b9b55e0cc130' }
+      let(:cache_key) { '8c715d092b88a89c737600fe42f2f093b9a18713' }
 
       it_behaves_like 'serialization'
 

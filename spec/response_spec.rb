@@ -1,68 +1,6 @@
 require 'spec_helper'
 
 describe Faraday::HttpCache::Response do
-  describe 'cacheable_in_shared_cache?' do
-    it 'the response is not cacheable if the response is marked as private' do
-      headers  = { 'Cache-Control' => 'private, max-age=400' }
-      response = Faraday::HttpCache::Response.new(status: 200, response_headers: headers)
-
-      expect(response).not_to be_cacheable_in_shared_cache
-    end
-
-    it 'the response is not cacheable if it should not be stored' do
-      headers  = { 'Cache-Control' => 'no-store, max-age=400' }
-      response = Faraday::HttpCache::Response.new(status: 200, response_headers: headers)
-
-      expect(response).not_to be_cacheable_in_shared_cache
-    end
-
-    it 'the response is not cacheable when the status code is not acceptable' do
-      headers  = { 'Cache-Control' => 'max-age=400' }
-      response = Faraday::HttpCache::Response.new(status: 503, response_headers: headers)
-      expect(response).not_to be_cacheable_in_shared_cache
-    end
-
-    [200, 203, 300, 301, 302, 404, 410].each do |status|
-      it "the response is cacheable if the status code is #{status} and the response is fresh" do
-        headers  = { 'Cache-Control' => 'max-age=400' }
-        response = Faraday::HttpCache::Response.new(status: status, response_headers: headers)
-
-        expect(response).to be_cacheable_in_shared_cache
-      end
-    end
-  end
-
-  describe 'cacheable_in_private_cache?' do
-    it 'the response is cacheable if the response is marked as private' do
-      headers  = { 'Cache-Control' => 'private, max-age=400' }
-      response = Faraday::HttpCache::Response.new(status: 200, response_headers: headers)
-
-      expect(response).to be_cacheable_in_private_cache
-    end
-
-    it 'the response is not cacheable if it should not be stored' do
-      headers  = { 'Cache-Control' => 'no-store, max-age=400' }
-      response = Faraday::HttpCache::Response.new(status: 200, response_headers: headers)
-
-      expect(response).not_to be_cacheable_in_private_cache
-    end
-
-    it 'the response is not cacheable when the status code is not acceptable' do
-      headers  = { 'Cache-Control' => 'max-age=400' }
-      response = Faraday::HttpCache::Response.new(status: 503, response_headers: headers)
-      expect(response).not_to be_cacheable_in_private_cache
-    end
-
-    [200, 203, 300, 301, 302, 404, 410].each do |status|
-      it "the response is cacheable if the status code is #{status} and the response is fresh" do
-        headers  = { 'Cache-Control' => 'max-age=400' }
-        response = Faraday::HttpCache::Response.new(status: status, response_headers: headers)
-
-        expect(response).to be_cacheable_in_private_cache
-      end
-    end
-  end
-
   describe 'freshness' do
     it 'is fresh if the response still has some time to live' do
       date = (Time.now - 200).httpdate

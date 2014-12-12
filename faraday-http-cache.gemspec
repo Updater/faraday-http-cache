@@ -15,4 +15,5 @@ Gem::Specification.new do |gem|
   gem.executables   = []
 
   gem.add_dependency 'faraday', '~> 0.8'
+  gem.add_development_dependency "awesome_print"
 end

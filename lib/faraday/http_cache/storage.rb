@@ -1,5 +1,6 @@
 require 'json'
 require 'digest/sha1'
+require 'active_support'
 
 module Faraday
   class HttpCache < Faraday::Middleware
@@ -30,7 +31,7 @@ module Faraday
       #           :store_options - An array containg the options for
       #                            the cache store.
       def initialize(options = {})
-        @cache = options[:store] || MemoryStore.new
+        @cache = options[:store] || ActiveSupport::Cache::MemoryStore.new
         @serializer = options[:serializer] || JSON
         @logger = options[:logger]
         @expiration = options[:expiration] || 3600
@@ -50,8 +51,8 @@ module Faraday
       def write(request, response)
         key = cache_key_for(request)
         value = @serializer.dump(response.serializable_hash)
-        cache.set(key, value)
-        cache.expire(key, @expiration)
+
+        cache.write(key, value, expires_in: @expiration)
       rescue Encoding::UndefinedConversionError => e
         if @logger
           @logger.warn("Response could not be serialized: #{e.message}. Try using Marshal to serialize.")
@@ -68,7 +69,7 @@ module Faraday
       # klass - The Class to be instantiated with the recovered informations.
       def read(request, klass = Faraday::HttpCache::Response)
         cache_key = cache_key_for(request)
-        found = cache.get(cache_key)
+        found = cache.read(cache_key)
 
         if found
           payload = @serializer.load(found).each_with_object({}) do |(key,value), hash|
@@ -97,7 +98,6 @@ module Faraday
         digest.update request[:body].to_s
         digest.update 'url'
         digest.update request[:url].to_s
-
         digest.to_s
       end
 
@@ -131,22 +131,6 @@ module Faraday
         unless cache.respond_to?(:read) && cache.respond_to?(:write)
           raise ArgumentError.new("#{cache.inspect} is not a valid cache store as it does not responds to 'read' and 'write'.")
         end
-      end
-    end
-
-    # Internal: A Hash based store to be used by the 'Storage' class
-    # when a 'store' is not provided for the middleware setup.
-    class MemoryStore
-      def initialize
-        @cache = {}
-      end
-
-      def read(key)
-        @cache[key]
-      end
-
-      def write(key, value)
-        @cache[key] = value
       end
     end
   end

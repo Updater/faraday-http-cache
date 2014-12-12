@@ -1,3 +1,4 @@
+require 'awesome_print'
 require 'faraday'
 
 require 'faraday/http_cache/storage'
@@ -38,7 +39,7 @@ module Faraday
   #   end
   class HttpCache < Faraday::Middleware
     # Internal: valid options for the 'initialize' configuration Hash.
-    VALID_OPTIONS = [:store, :serializer, :logger, :store_options, :should_cache]
+    VALID_OPTIONS = [:store, :serializer, :logger, :expiration, :store_options]
 
     # Public: Initializes a new HttpCache middleware.
     #
@@ -46,9 +47,7 @@ module Faraday
     # args - aditional options to setup the logger and the storage.
     #             :logger        - A logger object.
     #             :serializer    - A serializer that should respond to 'dump' and 'load'.
-    #             :should_cache  - A flag to mark the middleware as a shared cache or not.
     #             :store         - A cache store that should respond to 'read' and 'write'.
-    #             :store_options - Deprecated: additional options to setup the cache store.
     #
     # Examples:
     #
@@ -68,11 +67,10 @@ module Faraday
     def initialize(app, *args)
       super(app)
       @logger = nil
-      @should_cache = true
+
       if args.first.is_a? Hash
         options = args.first
         @logger = options[:logger]
-        @should_cache = options.fetch(:should_cache, true)
       else
         options = parse_deprecated_options(*args)
       end
@@ -101,14 +99,7 @@ module Faraday
       @trace = []
       @request = create_request(env)
 
-      response = nil
-
-      if should_cache?
-        response = process(env)
-      else
-        trace :unacceptable
-        response = @app.call(env)
-      end
+      response = process(env)
 
       response.on_complete do
         log_request
@@ -133,12 +124,6 @@ module Faraday
     end
 
     private
-
-    # Internal: Should this cache instance act like a "shared cache" according
-    # to the the definition in RFC 2616?
-    def should_cache?
-      @should_cache
-    end
 
     # Internal: Receive the deprecated arguments to initialize the old API
     # and returns a Hash compatible with the new API
@@ -211,7 +196,6 @@ module Faraday
       entry = @storage.read(@request)
 
       return fetch(env) if entry.nil?
-
       entry.to_response(env)
     end
 
@@ -233,10 +217,8 @@ module Faraday
     #
     # Returns nothing.
     def store(response)
-      if should_cache?
-        trace :store
-        @storage.write(@request, response)
-      end
+      trace :store
+      @storage.write(@request, response)
     end
 
     # Internal: Fetches the response from the Faraday stack and stores it.
@@ -280,7 +262,8 @@ module Faraday
       {
         method: hash[:method],
         url: hash[:url],
-        request_headers: hash[:request_headers].dup
+        request_headers: hash[:request_headers].dup,
+        body: hash[:body]
       }
     end
 
