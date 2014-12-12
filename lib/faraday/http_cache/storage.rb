@@ -33,6 +33,7 @@ module Faraday
         @cache = options[:store] || MemoryStore.new
         @serializer = options[:serializer] || JSON
         @logger = options[:logger]
+        @expiration = options[:expiration] || 3600
         if @cache.is_a? Symbol
           @cache = lookup_store(@cache, options[:store_options])
         end
@@ -49,7 +50,8 @@ module Faraday
       def write(request, response)
         key = cache_key_for(request)
         value = @serializer.dump(response.serializable_hash)
-        cache.write(key, value)
+        cache.set(key, value)
+        cache.expire(key, @expiration)
       rescue Encoding::UndefinedConversionError => e
         if @logger
           @logger.warn("Response could not be serialized: #{e.message}. Try using Marshal to serialize.")
@@ -66,7 +68,7 @@ module Faraday
       # klass - The Class to be instantiated with the recovered informations.
       def read(request, klass = Faraday::HttpCache::Response)
         cache_key = cache_key_for(request)
-        found = cache.read(cache_key)
+        found = cache.get(cache_key)
 
         if found
           payload = @serializer.load(found).each_with_object({}) do |(key,value), hash|
@@ -91,6 +93,8 @@ module Faraday
           digest.update key.to_s
           digest.update request[:request_headers][key].to_s
         end
+        digest.update 'body'
+        digest.update request[:body].to_s
         digest.update 'url'
         digest.update request[:url].to_s
 

@@ -38,7 +38,7 @@ module Faraday
   #   end
   class HttpCache < Faraday::Middleware
     # Internal: valid options for the 'initialize' configuration Hash.
-    VALID_OPTIONS = [:store, :serializer, :logger, :store_options, :shared_cache]
+    VALID_OPTIONS = [:store, :serializer, :logger, :store_options, :should_cache]
 
     # Public: Initializes a new HttpCache middleware.
     #
@@ -46,7 +46,7 @@ module Faraday
     # args - aditional options to setup the logger and the storage.
     #             :logger        - A logger object.
     #             :serializer    - A serializer that should respond to 'dump' and 'load'.
-    #             :shared_cache  - A flag to mark the middleware as a shared cache or not.
+    #             :should_cache  - A flag to mark the middleware as a shared cache or not.
     #             :store         - A cache store that should respond to 'read' and 'write'.
     #             :store_options - Deprecated: additional options to setup the cache store.
     #
@@ -68,11 +68,11 @@ module Faraday
     def initialize(app, *args)
       super(app)
       @logger = nil
-      @shared_cache = true
+      @should_cache = true
       if args.first.is_a? Hash
         options = args.first
         @logger = options[:logger]
-        @shared_cache = options.fetch(:shared_cache, true)
+        @should_cache = options.fetch(:should_cache, true)
       else
         options = parse_deprecated_options(*args)
       end
@@ -103,7 +103,7 @@ module Faraday
 
       response = nil
 
-      if can_cache?(@request[:method])
+      if should_cache?
         response = process(env)
       else
         trace :unacceptable
@@ -136,8 +136,8 @@ module Faraday
 
     # Internal: Should this cache instance act like a "shared cache" according
     # to the the definition in RFC 2616?
-    def shared_cache?
-      @shared_cache
+    def should_cache?
+      @should_cache
     end
 
     # Internal: Receive the deprecated arguments to initialize the old API
@@ -189,18 +189,11 @@ module Faraday
         options[:serializer] = hash_params.delete(:serializer)
 
         @logger = hash_params[:logger]
-        @shared_cache = hash_params.fetch(:shared_cache, true)
+        @should_cache = hash_params.fetch(:should_cache, true)
       end
 
       options[:store_options] = args
       options
-    end
-
-    # Internal: Validates if the current request method is valid for caching.
-    #
-    # Returns true if the method is ':get' or ':head'.
-    def can_cache?(method)
-      method == :get || method == :head
     end
 
     # Internal: Tries to locate a valid response or forwards the call to the stack.
@@ -219,43 +212,7 @@ module Faraday
 
       return fetch(env) if entry.nil?
 
-      if entry.fresh?
-        response = entry.to_response(env)
-        trace :fresh
-      else
-        response = validate(entry, env)
-      end
-
-      response
-    end
-
-    # Internal: Tries to validated a stored entry back to it's origin server
-    # using the 'If-Modified-Since' and 'If-None-Match' headers with the
-    # existing 'Last-Modified' and 'ETag' headers. If the new response
-    # is marked as 'Not Modified', the previous stored response will be used
-    # and forwarded against the Faraday stack. Otherwise, the freshly new
-    # response will be stored (replacing the old one) and used.
-    #
-    # entry - a stale 'Faraday::HttpCache::Response' retrieved from the cache.
-    # env - the environment 'Hash' to perform the request.
-    #
-    # Returns the 'Faraday::HttpCache::Response' to be forwarded into the stack.
-    def validate(entry, env)
-      headers = env[:request_headers]
-      headers['If-Modified-Since'] = entry.last_modified if entry.last_modified
-      headers['If-None-Match'] = entry.etag if entry.etag
-
-      @app.call(env).on_complete do |requested_env|
-        response = Response.new(requested_env)
-        if response.not_modified?
-          trace :valid
-          updated_payload = entry.payload
-          updated_payload[:response_headers].update(response.payload[:response_headers])
-          requested_env.update(updated_payload)
-          response = Response.new(updated_payload)
-        end
-        store(response)
-      end
+      entry.to_response(env)
     end
 
     # Internal: Records a traced action to be used by the logger once the
@@ -276,11 +233,9 @@ module Faraday
     #
     # Returns nothing.
     def store(response)
-      if shared_cache? ? response.cacheable_in_shared_cache? : response.cacheable_in_private_cache?
+      if should_cache?
         trace :store
         @storage.write(@request, response)
-      else
-        trace :invalid
       end
     end
 
