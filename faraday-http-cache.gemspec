@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 Gem::Specification.new do |gem|
   gem.name          = 'faraday-http-cache'
-  gem.version       = '0.4.2'
+  gem.version       = '0.4.3'
   gem.licenses      = ['Apache 2.0']
   gem.description   = 'Middleware to handle HTTP caching'
   gem.summary       = 'A Faraday middleware that stores and validates cache expiration.'
@@ -15,5 +15,4 @@ Gem::Specification.new do |gem|
   gem.executables   = []
 
   gem.add_dependency 'faraday', '~> 0.8'
-  gem.add_development_dependency "awesome_print"
 end

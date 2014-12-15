@@ -1,4 +1,3 @@
-require 'awesome_print'
 require 'faraday'
 
 require 'faraday/http_cache/storage'
