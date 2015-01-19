@@ -81,6 +81,8 @@ module Faraday
     # Public: Process the request into a duplicate of this instance to
     # ensure that the internal state is preserved.
     def call(env)
+      puts env
+      puts env[:force_no_cache]
       dup.call!(env)
     end
 
