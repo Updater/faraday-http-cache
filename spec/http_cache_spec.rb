@@ -122,4 +122,19 @@ describe Faraday::HttpCache do
       end
     end
   end
+
+  context 'when overriding no cache on per request base' do
+
+    it 'does not cache at all' do
+      client.get('get') do |req|
+        req.no_cache!
+      end
+      response = client.get('get') do |req|
+        req.no_cache!
+      end
+
+      expect(response.body).to eq('2')
+    end
+
+  end
 end

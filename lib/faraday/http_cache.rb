@@ -1,5 +1,7 @@
 require 'faraday'
 
+require 'faraday/overrides/request'
+require 'faraday/overrides/rack_builder'
 require 'faraday/http_cache/storage'
 require 'faraday/http_cache/response'
 
@@ -81,8 +83,6 @@ module Faraday
     # Public: Process the request into a duplicate of this instance to
     # ensure that the internal state is preserved.
     def call(env)
-      puts env
-      puts env[:force_no_cache]
       dup.call!(env)
     end
 
@@ -196,7 +196,7 @@ module Faraday
     def process(env)
       entry = @storage.read(@request)
 
-      return fetch(env) if entry.nil?
+      return fetch(env) if env[:force_no_cache] or entry.nil?
       entry.to_response(env)
     end
 
