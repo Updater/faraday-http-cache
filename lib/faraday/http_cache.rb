@@ -231,7 +231,7 @@ module Faraday
       trace :miss
       @app.call(env).on_complete do |fresh_env|
         response = Response.new(create_response(fresh_env))
-        store(response)
+        store(response) unless env[:force_no_cache]
       end
     end
 
