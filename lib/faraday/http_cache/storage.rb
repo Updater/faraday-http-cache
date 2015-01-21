@@ -49,6 +49,8 @@ module Faraday
       #           :request_headers - The custom headers for the request.
       # response - The Faraday::HttpCache::Response instance to be stored.
       def write(request, response)
+        @logger.debug("writing to storage: #{response}") if @logger
+
         key = cache_key_for(request)
         value = @serializer.dump(response.serializable_hash)
 
@@ -57,7 +59,6 @@ module Faraday
         if @logger
           @logger.warn("Response could not be serialized: #{e.message}. Try using Marshal to serialize.")
         end
-        raise
       end
 
       # Internal: Reads a key based on the given request from the underlying cache.

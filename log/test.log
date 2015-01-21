@@ -1,0 +1,27 @@
+[2015-01-21 21:49:24] INFO  WEBrick 1.3.1
+[2015-01-21 21:49:24] INFO  ruby 2.2.0 (2014-12-25) [x86_64-linux]
+[2015-01-21 21:49:24] INFO  WEBrick::HTTPServer#start: pid=31575 port=52102
+[-] GET  /ping  ->  200 4
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /json  ->  200 11
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /get  ->  200 1
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] POST  /post  ->  200 1
+[net_http] GET  /clear  ->  204 0
+[net_http] POST  /post  ->  200 1
+[net_http] POST  /post  ->  200 1
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /get  ->  200 1
+[net_http] GET  /get  ->  200 1
+[net_http] GET  /clear  ->  204 0
+[net_http] GET  /get  ->  200 1
+[net_http] GET  /get  ->  200 1
+[net_http] GET  /image  ->  200 266

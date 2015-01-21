@@ -59,10 +59,10 @@ describe Faraday::HttpCache::Storage do
         end
 
         it 'raises and logs a warning' do
-          logger = double(:logger, warn: nil)
+          logger = double(:logger, warn: nil, debug: nil)
           storage = Faraday::HttpCache::Storage.new(logger: logger)
 
-          expect { storage.write(request, response) }.to raise_error
+          expect { storage.write(request, response) }.not_to raise_error
           expect(logger).to have_received(:warn).with(
             'Response could not be serialized: "\xE2" from ASCII-8BIT to UTF-8. Try using Marshal to serialize.'
           )
