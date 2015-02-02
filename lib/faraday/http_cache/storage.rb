@@ -73,6 +73,7 @@ module Faraday
         found = cache.read(cache_key)
 
         if found
+          @logger.debug "Cache key found: #{cache_key}" if @logger
           payload = @serializer.load(found).each_with_object({}) do |(key,value), hash|
             hash[key.to_sym] = value
           end
