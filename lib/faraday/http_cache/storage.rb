@@ -49,7 +49,7 @@ module Faraday
       #           :request_headers - The custom headers for the request.
       # response - The Faraday::HttpCache::Response instance to be stored.
       def write(request, response)
-        @logger.debug("writing to storage: #{response}") if @logger
+        @logger.debug("writing response to storage: #{response.inspect}") if @logger
 
         key = cache_key_for(request)
         value = @serializer.dump(response.serializable_hash)
@@ -91,11 +91,8 @@ module Faraday
         digest = Digest::SHA1.new
         digest.update 'method'
         digest.update request[:method].to_s
-        digest.update 'request_headers'
-        request[:request_headers].keys.sort.each do |key|
-          digest.update key.to_s
-          digest.update request[:request_headers][key].to_s
-        end
+        digest.update 'Content-Type'
+        digest.update request[:request_headers]['Content-Type'].to_s
         digest.update 'body'
         digest.update request[:body].to_s
         digest.update 'url'
